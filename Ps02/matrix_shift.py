@@ -2,6 +2,22 @@ from math import ceil
 
 class MatrixShift:
     @staticmethod
+    def get_indices(key):
+        key = list(key)
+
+        indices = [0 for i in range(len(key))]
+        n = 1
+
+        for i in range(ord("A"), ord("Z") + 1):
+            letter = chr(i)
+            while letter in key:
+                indices[key.index(letter)] = n
+                n += 1
+                key[key.index(letter)] = "."
+        
+        return indices
+
+    @staticmethod
     def encode_2a(M, n):
         key = list(map(lambda a: int(a) - 1, n.split("-")))
         
@@ -22,17 +38,7 @@ class MatrixShift:
     
     @staticmethod
     def encode_2b(M, key):
-        key = list(key)
-
-        indices = [0 for i in range(len(key))]
-        n = 1
-
-        for i in range(ord("A"), ord("Z") + 1):
-            letter = chr(i)
-            while letter in key:
-                indices[key.index(letter)] = n
-                n += 1
-                key[key.index(letter)] = "."
+        indices = MatrixShift.get_indices(key)
                 
         ret = ""
 
@@ -46,37 +52,84 @@ class MatrixShift:
     
     @staticmethod
     def decode_2b(M, key):
-        key = list(key)
-
-        indices = [0 for i in range(len(key))]
-        n = 1
-
-        for i in range(ord("A"), ord("Z") + 1):
-            letter = chr(i)
-            while letter in key:
-                indices[key.index(letter)] = n
-                n += 1
-                key[key.index(letter)] = "."
+        indices = MatrixShift.get_indices(key)
         
-        length = ceil(len(M) / len(indices))
-        chars_left = len(M)
-        blocks = ["" for i in indices]
+        longer_blocks = len(M) % len(indices)
+        shorter_length = len(M) // len(indices)
 
-        indices_index = 1
+        blocks = []
+        block_start = 0
+
+        for i in range(len(indices)):
+            letters_in_block = shorter_length+1 if longer_blocks else shorter_length
+            blocks.append(M[block_start: block_start+letters_in_block])
+            block_start += letters_in_block
+            if longer_blocks:
+                longer_blocks -= 1
+        
+        output = ""
+
+        for i in range(shorter_length+1): # position in block
+            for j in indices:             # block number
+                if i < len(blocks[j-1]):
+                    output += blocks[j-1][i]
+
+        return output
+    
+    @staticmethod
+    def encode_2c(M, key):
+        indices = MatrixShift.get_indices(key)
+        
+        blocks = []
         M_index = 0
-        for i in indices:
-            shorter_length = len(M) // len(indices)
-            if shorter_length < length and chars_left % length-1 == 0:
-                length = shorter_length
-            for j in range(length):
-                blocks[indices.index(indices_index)] += M[M_index]
-                M_index += 1
-            indices_index += 1
 
-        return blocks
+        for i in range(len(indices)):
+            blocks.append(M[M_index:M_index + indices.index(i+1) + 1])
+            M_index = M_index + indices.index(i+1) + 1
+
+            if M_index >= len(M):
+                break
+        
+        output = ""
+
+        for index in range(len(indices)):
+            for block in blocks:
+                if indices.index(index+1) < len(block):
+                    output += block[indices.index(index+1)]
+
+        return output
+    
+    @staticmethod
+    def decode_2c(M, key):
+        indices = MatrixShift.get_indices(key)
+
+        M_left = len(M)
+        blocks = []
+
+        for i in range(len(indices)):
+            string = (indices.index(i+1)+1 if indices.index(i+1)+1 < M_left else M_left) * "."
+            blocks.append(string)
+            M_left -= len(string)
+            if not M_left:
+                break
+        
+        M_index = 0
+
+        for i in range(len(indices)):
+            for j in range(len(blocks)):
+                if M_index == len(M):
+                    break
+                if indices.index(i+1) < len(blocks[j]):
+                    blocks[j] = blocks[j][:indices.index(i+1)] + M[M_index] + blocks[j][indices.index(i+1)+1:]
+                    M_index += 1
+
+        return "".join(blocks)
 
 
 if __name__ == "__main__":
+
+    # 2A
+
     text = "CRYPTOGRAPHYOSA"
     key = "3-1-4-2"
     encoded = MatrixShift.encode_2a(text, key)
@@ -87,10 +140,26 @@ if __name__ == "__main__":
     print(decoded)
     print()
 
+
+    # 2B
+
     text = "HEREISASECRETMESSAGEENCIPHEREDBYTRANSPOSITION"
     key = "CONVENIENCE"
     encoded = MatrixShift.encode_2b(text, key)
     decoded = MatrixShift.decode_2b(encoded, key)
+
+    print(text)
+    print(encoded)
+    print(decoded)
+    print()
+
+
+    # 2C
+
+    text = "HEREISASECRETMESSAGEENCIPHEREDBYTRANSPOSITION"
+    key = "CONVENIENCE"
+    encoded = MatrixShift.encode_2c(text, key)
+    decoded = MatrixShift.decode_2c(encoded, key)
 
     print(text)
     print(encoded)

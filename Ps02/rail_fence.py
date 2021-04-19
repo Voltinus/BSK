@@ -62,7 +62,7 @@ class RailFence:
 if __name__ == "__main__":
     text = "CRYPTOGRAPHY"
     n = 3
-    encoded = RailFence.encode("CRYPTOGRAPHY", n)
+    encoded = RailFence.encode(text, n)
     decoded = RailFence.decode(encoded, n)
 
     print(text)
